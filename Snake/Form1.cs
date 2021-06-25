@@ -14,7 +14,7 @@ namespace Snake
     {
         System.Timers.Timer gameTime = new System.Timers.Timer();
 
-        int cellSize = 20, space = 4, gridX = 20, gridY = 15;
+        int cellSize = 20, space = 4, gridX = 20, gridY = 15, gameSpeed = 150;
         PictureBox[,] grid;
 
         int direction = 2;
@@ -23,6 +23,8 @@ namespace Snake
 
         int foodX, foodY;
         Random rnd = new Random();
+
+        bool running = false;
 
         public Form1()
         {
@@ -54,29 +56,43 @@ namespace Snake
         {
             snakeX = new List<int>();
             snakeX.Add(gridX / 2);
-            snakeX.Add(snakeX[0] + 1);
+            //snakeX.Add(snakeX[0] + 1);
             snakeY = new List<int>();
             snakeY.Add(gridY / 2);
-            snakeY.Add(snakeY[0]);
+            //snakeY.Add(snakeY[0]);
 
             grid[snakeX[0], snakeY[0]].BackColor = Color.White;
-            grid[snakeX[1], snakeY[1]].BackColor = Color.White;
+            //grid[snakeX[1], snakeY[1]].BackColor = Color.White;
 
             foodGen();
         }
 
         private void foodGen()
         {
-            foodX = rnd.Next(gridX);
-            foodY = rnd.Next(gridY);
+            bool invalid = true;
+            do
+            {
+                foodX = rnd.Next(gridX);
+                foodY = rnd.Next(gridY);
+
+                for (int id = 0; id < snakeX.Count; id++)
+                {
+                    if ((foodX != snakeX[id]) && (foodY != snakeY[id]))
+                    {
+                        invalid = false;
+                    }
+                }
+            } while (invalid);
             grid[foodX, foodY].BackColor = Color.Green;
 
-            
-            gameTime.Elapsed += Tick;
-            gameTime.AutoReset = false;
-            gameTime.Interval = 500;
-            gameTime.Start();
-            
+            if (!running)
+            {
+                gameTime.Elapsed += Tick;
+                gameTime.AutoReset = false;
+                gameTime.Interval = gameSpeed;
+                running = true;
+                gameTime.Start();
+            }
         }
 
         private void downPress(object sender, KeyEventArgs e)
@@ -84,49 +100,36 @@ namespace Snake
             switch (e.KeyCode)
             {
                 case Keys.Up:
-                    direction = 0;
+                    if(direction != 1)
+                        direction = 0;
                     break;
 
                 case Keys.Down:
-                    direction = 1;
+                    if (direction != 0)
+                        direction = 1;
                     break;
 
                 case Keys.Left:
-                    direction = 2;
+                    if (direction != 3)
+                        direction = 2;
                     break;
 
                 case Keys.Right:
-                    direction = 3;
+                    if (direction != 2)
+                        direction = 3;
                     break;
             }
-        }
-
-        private void upPress(object sender, KeyEventArgs e)
-        {
-
         }
 
         private void moveUp()
         {
             if (snakeY[0] - 1 < 0)
             {
-                MessageBox.Show("Game Over");
-                gameTime.Stop();
+                gameOver();
             }
             else
             {
                 snakeY[0]--;
-                /*
-                grid[snakeX[0], snakeY[0]].BackColor = Color.White;
-                if (snakeY.Count == 1)
-                {
-                    grid[snakeX[0], snakeY[0] + 1].BackColor = Color.Gray;
-                }
-                else
-                {
-                    grid[preSnakeX[snakeX.Count - 1], preSnakeY[snakeY.Count - 1]].BackColor = Color.Gray;
-                }
-                */
             }
         }
 
@@ -134,23 +137,11 @@ namespace Snake
         {
             if (snakeY[0] + 1 == gridY)
             {
-                MessageBox.Show("Game Over");
-                gameTime.Stop();
+                gameOver();
             }
             else
             {
                 snakeY[0]++;
-                /*
-                grid[snakeX[0], snakeY[0]].BackColor = Color.White;
-                if (snakeY.Count == 1)
-                {
-                    grid[snakeX[0], snakeY[0] - 1].BackColor = Color.Gray;
-                }
-                else
-                {
-                    grid[preSnakeX[snakeX.Count - 1], preSnakeY[snakeY.Count - 1]].BackColor = Color.Gray;
-                }
-                */
             }
         }
 
@@ -158,23 +149,11 @@ namespace Snake
         {
             if (snakeX[0] - 1 < 0)
             {
-                MessageBox.Show("Game Over");
-                gameTime.Stop();
+                gameOver();
             }
             else
             {
                 snakeX[0]--;
-                /*
-                grid[snakeX[0], snakeY[0]].BackColor = Color.White;
-                if (snakeX.Count == 1)
-                {
-                    grid[snakeX[0] + 1, snakeY[0]].BackColor = Color.Gray;
-                }
-                else
-                {
-                    grid[preSnakeX[snakeX.Count - 1], preSnakeY[snakeY.Count - 1]].BackColor = Color.Gray;
-                }
-                */
             }
         }
 
@@ -182,29 +161,16 @@ namespace Snake
         {
             if (snakeX[0] + 1 == gridX)
             {
-                MessageBox.Show("Game Over");
-                gameTime.Stop();
+                gameOver();
             }
             else
             {
                 snakeX[0]++;
-                grid[snakeX[0], snakeY[0]].BackColor = Color.White;
-                /*
-                if(snakeX.Count == 1)
-                {
-                    grid[snakeX[0] - 1, snakeY[0]].BackColor = Color.Gray;
-                }
-                else
-                {
-                    grid[preSnakeX[snakeX.Count-1], preSnakeY[snakeY.Count-1]].BackColor = Color.Gray;
-                }
-                */
             }
         }
 
         private void eat()
         {
-            foodGen();
             if(snakeX.Count == 1)
             {
                 switch (direction)
@@ -237,14 +203,29 @@ namespace Snake
                 snakeY.Add(snakeY[snakeY.Count - 1] - snakeY[snakeY.Count - 2] + snakeY[snakeY.Count - 1]);
             }
             grid[snakeX[snakeX.Count-1], snakeY[snakeY.Count-1]].BackColor = Color.White;
+            foodGen();
+        }
+
+        public void gameOver()
+        {
+            MessageBox.Show("Game Over");
+            gameTime.Stop();
+            running = false;
         }
 
         private void Tick(object sender, EventArgs e)
         {
+            preSnakeX = new List<int>();
+            preSnakeY = new List<int>();
             int holdlastX = snakeX[0];
             int holdlastY = snakeY[0];
-            preSnakeX = snakeX;
-            preSnakeY = snakeY;
+
+            for (int id = 0; id < snakeX.Count; id++)
+            {
+                preSnakeX.Add(snakeX[id]);
+                preSnakeY.Add(snakeY[id]);
+            }
+
             switch (direction)
             {
                 case 0:
@@ -265,9 +246,7 @@ namespace Snake
             }
 
             if ((snakeX[0] == foodX) && (snakeY[0] == foodY))
-            {
                 eat();
-            }
 
             for (int id = 1; id < snakeX.Count; id++)
             {
@@ -278,36 +257,43 @@ namespace Snake
                 holdlastX = holdcurX;
                 holdlastY = holdcurY;
 
-                /*
+                
                 if ((snakeX[0] == snakeX[id]) && (snakeY[0] == snakeY[id]))
-                {
-                    //MessageBox.Show("Game Over");
-                    MessageBox.Show("check");
-                    gameTime.Stop();
-                }
-                */
+                    gameOver();
             }
 
-            for(int j = 0; j < gridY; j++)
+            for (int j = 0; j < gridY; j++)
             {
-                for(int i = 0; i < gridX; i++)
+                for (int i = 0; i < gridX; i++)
                 {
-                    for(int id = 0; id < snakeX.Count; id++)
+                    if ((i == foodX) && (j == foodY))
                     {
-                        if ((i == snakeX[id]) && (j == snakeY[id]))
-                        {
-                            grid[i, j].BackColor = Color.White;
-                        }
-                        else
-                        {
-                            grid[i, j].BackColor = Color.Gray;
-                        }
+                        grid[i, j].BackColor = Color.Green;
+                    }
+                    else
+                    {
+                        grid[i, j].BackColor = Color.Gray;
                     }
                 }
             }
 
-            Thread.Sleep(100);
-            gameTime.Start();
+            if (running)
+            {
+                for (int id = 0; id < preSnakeX.Count; id++)
+                {
+                    grid[preSnakeX[id], preSnakeY[id]].BackColor = Color.Gray;
+                }
+
+                for (int id = 0; id < snakeX.Count; id++)
+                {
+                    if (id == 0)
+                        grid[snakeX[id], snakeY[id]].BackColor = Color.Blue;
+                    else
+                        grid[snakeX[id], snakeY[id]].BackColor = Color.White;
+                }
+
+                gameTime.Start();
+            }
         }
     }
 }
